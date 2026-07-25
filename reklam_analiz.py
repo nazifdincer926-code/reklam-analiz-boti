@@ -1,15 +1,12 @@
 import streamlit as st
 import pandas as pd
-import cv2
 import requests
-import os
 import numpy as np
 from datetime import datetime, timedelta
-import json
 import plotly.graph_objects as go
 
 # --- SAYFA YAPILANDIRMASI ---
-st.set_page_config(page_title="Pro Meta Reklam Analizörü v2.0", layout="wide", page_icon="📈")
+st.set_page_config(page_title="Pro Meta Reklam Analizörü", layout="wide", page_icon="📈")
 
 # --- ARAYÜZ VE TEMA ÖZELLEŞTİRMELERİ ---
 st.markdown("""
@@ -24,21 +21,31 @@ st.markdown("""
         background-color: transparent;
     }
     
-    /* Yan Menü (Sidebar) Koyu/Siyah Tema */
+    /* Yan Menü (Sidebar) Temiz Beyaz Tema */
     section[data-testid="stSidebar"] {
-        background-color: #0f172a !important;
-        border-right: 1px solid #1e293b;
+        background-color: #ffffff !important;
+        border-right: 1px solid #e2e8f0;
     }
     
+    /* Yan menü yazıları */
     section[data-testid="stSidebar"] * {
-        color: #f8fafc !important;
+        color: #0f172a !important;
     }
 
+    /* API Giriş Kutuları - Belirgin Siyah Çerçeve */
     section[data-testid="stSidebar"] input {
-        background-color: #1e293b !important;
-        color: #ffffff !important;
-        border: 1px solid #334155 !important;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 2px solid #000000 !important; /* Siyah köşeler/çerçeve */
         border-radius: 8px;
+        padding: 8px;
+        font-weight: 500;
+    }
+    
+    /* Focus (Tıklanınca) Durumu */
+    section[data-testid="stSidebar"] input:focus {
+        border: 2px solid #ff416c !important;
+        box-shadow: none !important;
     }
 
     /* Sekme (Tab) Tasarımları */
@@ -84,8 +91,8 @@ st.markdown("""
         border-radius: 20px;
         padding: 20px;
         color: white;
-        box-shadow: 0 10px 25px rgba(127, 0, 255, 0.2);
-        margin-bottom: 10px;
+        box-shadow: 0 10px 25px rgba(127, 0, 255, 0.25);
+        margin-bottom: 5px;
     }
 
     .gradient-card-red {
@@ -93,8 +100,8 @@ st.markdown("""
         border-radius: 20px;
         padding: 20px;
         color: white;
-        box-shadow: 0 10px 25px rgba(255, 65, 108, 0.2);
-        margin-bottom: 10px;
+        box-shadow: 0 10px 25px rgba(255, 65, 108, 0.25);
+        margin-bottom: 5px;
     }
 
     .gradient-card-darkpurple {
@@ -102,8 +109,8 @@ st.markdown("""
         border-radius: 20px;
         padding: 20px;
         color: white;
-        box-shadow: 0 10px 25px rgba(168, 0, 119, 0.2);
-        margin-bottom: 10px;
+        box-shadow: 0 10px 25px rgba(168, 0, 119, 0.25);
+        margin-bottom: 5px;
     }
 
     .card-flex {
@@ -122,47 +129,44 @@ st.markdown("""
         font-size: 2rem;
         font-weight: 800;
     }
-
-    /* Buton Tasarımları */
+    
+    /* Genel Buton Tasarımlarını Temizle (Kırmızı dev butonları düzeltir) */
     .stButton>button {
-        background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
-        color: white;
-        border-radius: 16px;
-        font-weight: bold;
-        border: none;
-        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        border: 1px solid #cbd5e1;
         width: 100%;
-        box-shadow: 0 4px 15px rgba(255, 65, 108, 0.3);
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- İNTERAKTİF ÇİZGİ GRAFİĞİ OLUŞTURUCU (Mor Arka Plan + Yeşil Çizgiler) ---
-def create_sparkline(y_values, bar_values=None):
+# --- İNTERAKTİF ÇİZGİ GRAFİĞİ OLUŞTURUCU (Şeffaf Arka Plan + Canlı Çizgiler) ---
+def create_sparkline(y_values, bar_values=None, line_color="#7f00ff"):
     fig = go.Figure()
     
-    # Yeşil Sütunlar
+    # Arka plan sütunları (daha hafif)
     if bar_values is not None:
         fig.add_trace(go.Bar(
             y=bar_values,
-            marker_color='rgba(0, 255, 136, 0.25)',
+            marker_color=f'rgba(200, 200, 200, 0.3)', 
             showlegend=False
         ))
         
-    # Yeşil Düğümlü Çizgi
+    # Canlı renkli düğümlü çizgi
     fig.add_trace(go.Scatter(
         y=y_values,
         mode='lines+markers',
-        line=dict(color='#00ff88', width=3),
-        marker=dict(color='#00ff88', size=7, symbol='circle-open-dot'),
+        line=dict(color=line_color, width=3),
+        marker=dict(color=line_color, size=6, symbol='circle'),
         showlegend=False
     ))
     
+    # Tamamen şeffaf arka plan
     fig.update_layout(
-        margin=dict(l=10, r=10, t=10, b=10),
-        height=90,
-        paper_bgcolor='#2a085c', # Mor Arka Plan
-        plot_bgcolor='#2a085c',  # Mor Arka Plan
+        margin=dict(l=0, r=0, t=5, b=15),
+        height=70,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
         xaxis=dict(visible=False),
         yaxis=dict(visible=False),
         showlegend=False
@@ -171,19 +175,18 @@ def create_sparkline(y_values, bar_values=None):
 
 # --- Sidebar - API Kurulumları ---
 st.sidebar.header("🔑 Güvenli API Bağlantıları")
-st.sidebar.markdown("Verileriniz yerelinizde işlenir, sunucuya gönderilmez.")
+st.sidebar.markdown("Lütfen erişim bilgilerinizi aşağıdaki alanlara giriniz.")
 
-meta_token = st.sidebar.text_input("1. Meta System User Access Token", type="password", help="Business Manager'dan alınan, reklam okuma yetkili kalıcı token.")
+meta_token = st.sidebar.text_input("1. Meta System User Access Token", type="password", help="Business Manager'dan alınan kalıcı token.")
 ad_account_id = st.sidebar.text_input("2. Reklam Hesabı ID", help="Sadece rakamlar. Örn: 1234567890")
-openai_key = st.sidebar.text_input("3. OpenAI API Key", type="password", help="gpt-4o veya gpt-3.5-turbo erişimi olan key.")
+openai_key = st.sidebar.text_input("3. OpenAI API Key", type="password", help="Yapay zeka analizleri için API anahtarınız.")
 
 st.sidebar.markdown("---")
-target_cpa = st.sidebar.number_input("🎯 Hedef Müşteri Edinme Maliyeti (CPA) TL", value=100.0, step=10.0, help="Kârlı olmanız için gereken maksimum sipariş başı maliyet.")
+target_cpa = st.sidebar.number_input("🎯 Hedef Müşteri Edinme Maliyeti (CPA) TL", value=100.0, step=10.0)
 
 # --- FONKSİYONLAR ---
 
 def fetch_meta_data(token, account_id):
-    """Meta Graph API'den gerçek reklam performans verilerini çeker."""
     if not token or not account_id:
         return None
     
@@ -216,7 +219,6 @@ def fetch_meta_data(token, account_id):
             return None
 
 def process_meta_data(raw_data):
-    """API'den gelen karmaşık JSON verisini temiz Pandas DataFrame'e çevirir."""
     processed_list = []
     for ad in raw_data:
         ad_data = {
@@ -250,7 +252,6 @@ def process_meta_data(raw_data):
     return df
 
 def ask_ai(api_key, system_prompt, user_prompt):
-    """OpenAI API'sini kullanarak teşhis ve senaryo üretir."""
     if not api_key:
         return "⚠️ OpenAI API Key girilmediği için analiz yapılamıyor."
         
@@ -315,7 +316,8 @@ with tab1:
             </div>
         </div>
     """, unsafe_allow_html=True)
-    st.plotly_chart(create_sparkline([10, 8, 12, 7, 14, 6, 18, 12, 10, 15, 13], [5, 7, 6, 8, 10, 7, 12, 9, 8, 11, 9]), use_container_width=True, config={'displayModeBar': False})
+    # Şeffaf arka plan, mor karta uygun eflatun çizgi rengi (#b550ff)
+    st.plotly_chart(create_sparkline([10, 8, 12, 7, 14, 6, 18, 12, 10, 15, 13], [5, 7, 6, 8, 10, 7, 12, 9, 8, 11, 9], "#b550ff"), use_container_width=True, config={'displayModeBar': False})
 
     # --- KART 2: Hemen Çıkma Oranı ---
     st.markdown(f"""
@@ -326,7 +328,8 @@ with tab1:
             </div>
         </div>
     """, unsafe_allow_html=True)
-    st.plotly_chart(create_sparkline([12, 16, 10, 14, 8, 18, 11, 15, 9, 13, 10], [8, 12, 7, 10, 6, 14, 9, 11, 7, 10, 8]), use_container_width=True, config={'displayModeBar': False})
+    # Şeffaf arka plan, kırmızı karta uygun canlı kırmızı/pembe çizgi (#ff416c)
+    st.plotly_chart(create_sparkline([12, 16, 10, 14, 8, 18, 11, 15, 9, 13, 10], [8, 12, 7, 10, 6, 14, 9, 11, 7, 10, 8], "#ff416c"), use_container_width=True, config={'displayModeBar': False})
 
     # --- KART 3: Ortalama Süre ---
     st.markdown(f"""
@@ -337,18 +340,27 @@ with tab1:
             </div>
         </div>
     """, unsafe_allow_html=True)
-    st.plotly_chart(create_sparkline([8, 11, 7, 13, 9, 16, 10, 12, 8, 14, 11], [6, 9, 5, 10, 7, 12, 8, 9, 6, 11, 9]), use_container_width=True, config={'displayModeBar': False})
+    # Şeffaf arka plan, koyu mor karta uygun lila çizgi (#d472ff)
+    st.plotly_chart(create_sparkline([8, 11, 7, 13, 9, 16, 10, 12, 8, 14, 11], [6, 9, 5, 10, 7, 12, 8, 9, 6, 11, 9], "#d472ff"), use_container_width=True, config={'displayModeBar': False})
 
-    # Zaman Filtresi Butonları
-    st.markdown("<br>", unsafe_allow_html=True)
-    filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
-    filter_col1.button("Gün")
-    filter_col2.button("Hafta")
-    filter_col3.button("Ay")
-    filter_col4.button("Yıl")
+    st.markdown("---")
+    
+    # YENİ ZAMAN FİLTRESİ (Kurumsal ve Göz Yormayan Tasarım)
+    st.markdown("##### 📅 Veri Görüntüleme Aralığı")
+    zaman_araligi = st.radio(
+        "Lütfen analiz etmek istediğiniz dönemi seçin:",
+        options=[
+            "Gün (Son 24 Saatlik Performans)", 
+            "Hafta (Son 7 Günlük Trendler)", 
+            "Ay (Son 30 Günlük Genel Tablo)", 
+            "Yıl (Tüm Zamanların Özeti)"
+        ],
+        horizontal=False,
+        index=2 # Varsayılan olarak "Ay" seçili gelsin
+    )
 
     if df_reklamlar is not None and not df_reklamlar.empty:
-        st.markdown("### 📋 Canlı Reklam Tablosu")
+        st.markdown(f"### 📋 Canlı Reklam Tablosu")
         def style_cpa(row):
             if row['Sipariş'] == 0 and row['Harcanan (TL)'] > 50:
                 return ['background-color: #ffe6e6; color: #990000'] * len(row)
@@ -383,6 +395,18 @@ with tab3:
         c3.metric("CPA", f"{reklam_verisi['CPA (E.Maliyet)']:.2f} TL")
         c4.metric("CTR", f"%{reklam_verisi['Tıklama Oranı (CTR %)']:.2f}")
 
+        # Yapay Zeka Butonu için özel stil uyguluyoruz
+        st.markdown("""
+            <style>
+            .ai-button button {
+                background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%) !important;
+                color: white !important;
+                border: none !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+        
+        st.markdown('<div class="ai-button">', unsafe_allow_html=True)
         if st.button("🚀 Derin AI Analizini Başlat"):
             if not openai_key:
                 st.error("Lütfen sidebar'a OpenAI API Key girin.")
@@ -407,6 +431,7 @@ with tab3:
                 st.markdown("---")
                 st.subheader("📋 Uzman Raporu")
                 st.markdown(analiz_sonucu)
+        st.markdown('</div>', unsafe_allow_html=True)
                 
     else:
         st.warning("⚠️ Lütfen önce 'Kontrol Paneli' sekmesinde Meta verilerini yükleyin.")
