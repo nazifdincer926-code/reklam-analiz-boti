@@ -11,24 +11,23 @@ import plotly.graph_objects as go
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Pro Meta Reklam Analizörü v2.0", layout="wide", page_icon="📈")
 
-# --- YENİ MODERN ARAYÜZ STİLİ (Fotoğraftaki Tasarım) ---
+# --- YENİ BEYAZ VE MODERN ARAYÜZ STİLİ ---
 st.markdown("""
     <style>
-    /* Ana Arka Plan (Görseldeki Koyu Lacivert/Siyah) */
+    /* Ana Arka Plan (Açık Gri / Beyaz Tema) */
     .stApp {
-        background-color: #0b101d;
-        color: #ffffff;
+        background-color: #f8f9fa;
+        color: #1e293b;
     }
     
-    /* Hide Streamlit Header Elements for Clean Mobile View */
     header[data-testid="stHeader"] {
         background-color: transparent;
     }
     
-    /* Yan Menü (Sidebar) Koyu Tema */
+    /* Yan Menü (Sidebar) Açık Tema */
     section[data-testid="stSidebar"] {
-        background-color: #121829;
-        border-right: 1px solid #1e2638;
+        background-color: #ffffff;
+        border-right: 1px solid #e2e8f0;
     }
     
     /* Sekme (Tab) Tasarımları */
@@ -37,12 +36,12 @@ st.markdown("""
         background-color: transparent;
     }
     .stTabs [data-baseweb="tab"] {
-        background-color: #121829;
+        background-color: #ffffff;
         border-radius: 12px;
-        color: #8b949e;
+        color: #64748b;
         padding: 8px 16px;
         font-weight: 600;
-        border: 1px solid #1e2638;
+        border: 1px solid #e2e8f0;
     }
     .stTabs [aria-selected="true"] {
         background-color: #ff416c !important;
@@ -50,7 +49,7 @@ st.markdown("""
         border: none !important;
     }
 
-    /* Görseldeki Üst Başlık Stili */
+    /* Üst Başlık Stili */
     .dashboard-header {
         display: flex;
         justify-content: space-between;
@@ -59,41 +58,42 @@ st.markdown("""
     }
     .dashboard-title {
         font-size: 1.8rem;
-        font-weight: 700;
-        color: #ffffff;
+        font-weight: 800;
+        color: #0f172a;
     }
     .dashboard-subtitle {
         font-size: 0.9rem;
-        color: #8b949e;
+        color: #64748b;
+        font-weight: 600;
     }
 
-    /* Görseldeki Mor/Mavi Gradyan Kart */
+    /* Mor/Mavi Gradyan Kart */
     .gradient-card-purple {
         background: linear-gradient(135deg, #7f00ff 0%, #e100ff 100%);
         border-radius: 24px;
         padding: 20px;
         color: white;
-        box-shadow: 0 10px 25px rgba(127, 0, 255, 0.3);
+        box-shadow: 0 10px 25px rgba(127, 0, 255, 0.2);
         margin-bottom: 20px;
     }
 
-    /* Görseldeki Kırmızı/Turuncu Gradyan Kart */
+    /* Kırmızı/Turuncu Gradyan Kart */
     .gradient-card-red {
         background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
         border-radius: 24px;
         padding: 20px;
         color: white;
-        box-shadow: 0 10px 25px rgba(255, 65, 108, 0.3);
+        box-shadow: 0 10px 25px rgba(255, 65, 108, 0.2);
         margin-bottom: 20px;
     }
 
-    /* Görseldeki Koyu Mor Gradyan Kart */
+    /* Koyu Mor Gradyan Kart */
     .gradient-card-darkpurple {
         background: linear-gradient(135deg, #a80077 0%, #660099 100%);
         border-radius: 24px;
         padding: 20px;
         color: white;
-        box-shadow: 0 10px 25px rgba(168, 0, 119, 0.3);
+        box-shadow: 0 10px 25px rgba(168, 0, 119, 0.2);
         margin-bottom: 20px;
     }
 
@@ -105,8 +105,8 @@ st.markdown("""
 
     .card-title-text {
         font-size: 0.95rem;
-        opacity: 0.9;
-        font-weight: 500;
+        opacity: 0.95;
+        font-weight: 600;
     }
 
     .card-value-text {
@@ -123,24 +123,22 @@ st.markdown("""
         border: none;
         padding: 12px 24px;
         width: 100%;
-        box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4);
+        box-shadow: 0 4px 15px rgba(255, 65, 108, 0.3);
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- İNTERAKTİF ÇİZGİ GRAFİĞİ OLUŞTURUCU (Resimdeki Çizgiler) ---
+# --- İNTERAKTİF ÇİZGİ GRAFİĞİ OLUŞTURUCU ---
 def create_sparkline(y_values, bar_values=None):
     fig = go.Figure()
     
-    # Arka plandaki sütunlar (Varsa)
     if bar_values is not None:
         fig.add_trace(go.Bar(
             y=bar_values,
-            marker_color='rgba(255, 255, 255, 0.2)',
+            marker_color='rgba(255, 255, 255, 0.25)',
             showlegend=False
         ))
         
-    # Ön plandaki düğümlü çizgi grafik
     fig.add_trace(go.Scatter(
         y=y_values,
         mode='lines+markers',
@@ -171,7 +169,7 @@ openai_key = st.sidebar.text_input("3. OpenAI API Key", type="password", help="g
 st.sidebar.markdown("---")
 target_cpa = st.sidebar.number_input("🎯 Hedef Müşteri Edinme Maliyeti (CPA) TL", value=100.0, step=10.0, help="Kârlı olmanız için gereken maksimum sipariş başı maliyet.")
 
-# --- FONKSİYONLAR (Orijinal Mantık Korundu) ---
+# --- FONKSİYONLAR ---
 
 def fetch_meta_data(token, account_id):
     """Meta Graph API'den gerçek reklam performans verilerini çeker."""
@@ -271,87 +269,83 @@ def ask_ai(api_key, system_prompt, user_prompt):
 
 # --- ANA ARAYÜZ ---
 
-tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "🎥 Kreatif Stüdyo", "🧠 AI Performans Dedektifi"])
+tab1, tab2, tab3 = st.tabs(["📊 Kontrol Paneli", "🎥 Kreatif Stüdyo", "🧠 AI Performans Dedektifi"])
 
 df_reklamlar = None
 
 with tab1:
-    # Üst Başlık (Fotoğraftaki Overview / Dashboard)
+    # Türkçe Üst Başlık
     st.markdown("""
         <div class="dashboard-header">
             <div>
-                <div class="dashboard-subtitle">Overview</div>
-                <div class="dashboard-title">Dashboard</div>
+                <div class="dashboard-subtitle">Genel Bakış</div>
+                <div class="dashboard-title">Kontrol Paneli</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
     
-    # API'den Veri Çekme Kontrolü
     if meta_token and ad_account_id:
         df_reklamlar = fetch_meta_data(meta_token, ad_account_id)
 
-    # DÜZENLEME: Veri olsa da olmasa da Görseldeki Kartları Göster
     if df_reklamlar is not None and not df_reklamlar.empty:
         total_spend = f"{df_reklamlar['Harcanan (TL)'].sum():,.0f} TL"
-        avg_ctr = f"{df_reklamlar['Tıklama Oranı (CTR %)'].mean():.1f}%"
+        avg_ctr = f"%{df_reklamlar['Tıklama Oranı (CTR %)'].mean():.1f}"
         total_purchases = f"{df_reklamlar['Sipariş'].sum()} Sipariş"
     else:
-        # Fotoğraftaki Birebir Örnek Rakamlar (Veri Girilmediğinde Açılış Ekranı)
-        total_spend = "127,425"
-        avg_ctr = "21.8%"
+        total_spend = "127,425 TL"
+        avg_ctr = "%21.8"
         total_purchases = "05:34"
 
-    # --- KART 1: Mor/Mavi Gradyan (Page Views / Harcama) ---
+    # --- KART 1: Türkçe Sayfa Görüntüleme ---
     st.markdown(f"""
         <div class="gradient-card-purple">
             <div class="card-flex">
-                <span class="card-title-text">Page Views</span>
+                <span class="card-title-text">Sayfa Görüntüleme</span>
                 <span class="card-value-text">{total_spend}</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
     st.plotly_chart(create_sparkline([10, 8, 12, 7, 14, 6, 18, 12, 10, 15, 13], [5, 7, 6, 8, 10, 7, 12, 9, 8, 11, 9]), use_container_width=True, config={'displayModeBar': False})
 
-    # --- KART 2: Kırmızı/Turuncu Gradyan (Bounce Rate / CTR) ---
+    # --- KART 2: Türkçe Hemen Çıkma Oranı ---
     st.markdown(f"""
         <div class="gradient-card-red">
             <div class="card-flex">
-                <span class="card-title-text">Bounce Rate</span>
+                <span class="card-title-text">Hemen Çıkma Oranı</span>
                 <span class="card-value-text">{avg_ctr}</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
     st.plotly_chart(create_sparkline([12, 16, 10, 14, 8, 18, 11, 15, 9, 13, 10], [8, 12, 7, 10, 6, 14, 9, 11, 7, 10, 8]), use_container_width=True, config={'displayModeBar': False})
 
-    # --- KART 3: Koyu Mor Gradyan (Average Time / Sipariş) ---
+    # --- KART 3: Türkçe Ortalama Süre ---
     st.markdown(f"""
         <div class="gradient-card-darkpurple">
             <div class="card-flex">
-                <span class="card-title-text">Average Time</span>
+                <span class="card-title-text">Ortalama Süre</span>
                 <span class="card-value-text">{total_purchases}</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
     st.plotly_chart(create_sparkline([8, 11, 7, 13, 9, 16, 10, 12, 8, 14, 11], [6, 9, 5, 10, 7, 12, 8, 9, 6, 11, 9]), use_container_width=True, config={'displayModeBar': False})
 
-    # Fotoğraftaki Alt Zaman Filtresi (Day | Week | Month | Year)
+    # Türkçe Zaman Filtresi Buttons
     st.markdown("---")
     filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
-    filter_col1.button("Day")
-    filter_col2.button("Week")
-    filter_col3.button("Month")
-    filter_col4.button("Year")
+    filter_col1.button("Gün")
+    filter_col2.button("Hafta")
+    filter_col3.button("Ay")
+    filter_col4.button("Yıl")
 
-    # Canlı Tablo Verisi Varsa Alt Tarafta Göster
     if df_reklamlar is not None and not df_reklamlar.empty:
         st.markdown("### 📋 Canlı Reklam Tablosu")
         def style_cpa(row):
             if row['Sipariş'] == 0 and row['Harcanan (TL)'] > 50:
-                return ['background-color: #4a1525; color: #ff9999'] * len(row)
+                return ['background-color: #ffe6e6; color: #990000'] * len(row)
             elif row['CPA (E.Maliyet)'] > target_cpa and row['Sipariş'] > 0:
-                return ['background-color: #4d3319; color: #ffcc80'] * len(row)
+                return ['background-color: #fff3e0; color: #b78103'] * len(row)
             elif row['CPA (E.Maliyet)'] <= target_cpa and row['Sipariş'] > 0:
-                return ['background-color: #123825; color: #a3e635'] * len(row)
+                return ['background-color: #e6f4ea; color: #137333'] * len(row)
             else:
                 return [''] * len(row)
 
@@ -405,4 +399,4 @@ with tab3:
                 st.markdown(analiz_sonucu)
                 
     else:
-        st.warning("⚠️ Lütfen önce 'Dashboard' sekmesinde Meta verilerini yükleyin.")
+        st.warning("⚠️ Lütfen önce 'Kontrol Paneli' sekmesinde Meta verilerini yükleyin.")
