@@ -11,10 +11,10 @@ import plotly.graph_objects as go
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Pro Meta Reklam Analizörü v2.0", layout="wide", page_icon="📈")
 
-# --- YENİ BEYAZ VE MODERN ARAYÜZ STİLİ ---
+# --- ARAYÜZ VE TEMA ÖZELLEŞTİRMELERİ ---
 st.markdown("""
     <style>
-    /* Ana Arka Plan (Açık Gri / Beyaz Tema) */
+    /* Ana Arka Plan */
     .stApp {
         background-color: #f8f9fa;
         color: #1e293b;
@@ -24,12 +24,23 @@ st.markdown("""
         background-color: transparent;
     }
     
-    /* Yan Menü (Sidebar) Açık Tema */
+    /* Yan Menü (Sidebar) Koyu/Siyah Tema */
     section[data-testid="stSidebar"] {
-        background-color: #ffffff;
-        border-right: 1px solid #e2e8f0;
+        background-color: #0f172a !important;
+        border-right: 1px solid #1e293b;
     }
     
+    section[data-testid="stSidebar"] * {
+        color: #f8fafc !important;
+    }
+
+    section[data-testid="stSidebar"] input {
+        background-color: #1e293b !important;
+        color: #ffffff !important;
+        border: 1px solid #334155 !important;
+        border-radius: 8px;
+    }
+
     /* Sekme (Tab) Tasarımları */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
@@ -67,34 +78,32 @@ st.markdown("""
         font-weight: 600;
     }
 
-    /* Mor/Mavi Gradyan Kart */
+    /* Kart Tasarımları */
     .gradient-card-purple {
         background: linear-gradient(135deg, #7f00ff 0%, #e100ff 100%);
-        border-radius: 24px;
+        border-radius: 20px;
         padding: 20px;
         color: white;
         box-shadow: 0 10px 25px rgba(127, 0, 255, 0.2);
-        margin-bottom: 20px;
+        margin-bottom: 10px;
     }
 
-    /* Kırmızı/Turuncu Gradyan Kart */
     .gradient-card-red {
         background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
-        border-radius: 24px;
+        border-radius: 20px;
         padding: 20px;
         color: white;
         box-shadow: 0 10px 25px rgba(255, 65, 108, 0.2);
-        margin-bottom: 20px;
+        margin-bottom: 10px;
     }
 
-    /* Koyu Mor Gradyan Kart */
     .gradient-card-darkpurple {
         background: linear-gradient(135deg, #a80077 0%, #660099 100%);
-        border-radius: 24px;
+        border-radius: 20px;
         padding: 20px;
         color: white;
         box-shadow: 0 10px 25px rgba(168, 0, 119, 0.2);
-        margin-bottom: 20px;
+        margin-bottom: 10px;
     }
 
     .card-flex {
@@ -128,30 +137,32 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- İNTERAKTİF ÇİZGİ GRAFİĞİ OLUŞTURUCU ---
+# --- İNTERAKTİF ÇİZGİ GRAFİĞİ OLUŞTURUCU (Mor Arka Plan + Yeşil Çizgiler) ---
 def create_sparkline(y_values, bar_values=None):
     fig = go.Figure()
     
+    # Yeşil Sütunlar
     if bar_values is not None:
         fig.add_trace(go.Bar(
             y=bar_values,
-            marker_color='rgba(255, 255, 255, 0.25)',
+            marker_color='rgba(0, 255, 136, 0.25)',
             showlegend=False
         ))
         
+    # Yeşil Düğümlü Çizgi
     fig.add_trace(go.Scatter(
         y=y_values,
         mode='lines+markers',
-        line=dict(color='white', width=3),
-        marker=dict(color='white', size=7, symbol='circle-open-dot'),
+        line=dict(color='#00ff88', width=3),
+        marker=dict(color='#00ff88', size=7, symbol='circle-open-dot'),
         showlegend=False
     ))
     
     fig.update_layout(
-        margin=dict(l=0, r=0, t=10, b=0),
-        height=70,
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=10, r=10, t=10, b=10),
+        height=90,
+        paper_bgcolor='#2a085c', # Mor Arka Plan
+        plot_bgcolor='#2a085c',  # Mor Arka Plan
         xaxis=dict(visible=False),
         yaxis=dict(visible=False),
         showlegend=False
@@ -274,7 +285,6 @@ tab1, tab2, tab3 = st.tabs(["📊 Kontrol Paneli", "🎥 Kreatif Stüdyo", "🧠
 df_reklamlar = None
 
 with tab1:
-    # Türkçe Üst Başlık
     st.markdown("""
         <div class="dashboard-header">
             <div>
@@ -296,7 +306,7 @@ with tab1:
         avg_ctr = "%21.8"
         total_purchases = "05:34"
 
-    # --- KART 1: Türkçe Sayfa Görüntüleme ---
+    # --- KART 1: Sayfa Görüntüleme ---
     st.markdown(f"""
         <div class="gradient-card-purple">
             <div class="card-flex">
@@ -307,7 +317,7 @@ with tab1:
     """, unsafe_allow_html=True)
     st.plotly_chart(create_sparkline([10, 8, 12, 7, 14, 6, 18, 12, 10, 15, 13], [5, 7, 6, 8, 10, 7, 12, 9, 8, 11, 9]), use_container_width=True, config={'displayModeBar': False})
 
-    # --- KART 2: Türkçe Hemen Çıkma Oranı ---
+    # --- KART 2: Hemen Çıkma Oranı ---
     st.markdown(f"""
         <div class="gradient-card-red">
             <div class="card-flex">
@@ -318,7 +328,7 @@ with tab1:
     """, unsafe_allow_html=True)
     st.plotly_chart(create_sparkline([12, 16, 10, 14, 8, 18, 11, 15, 9, 13, 10], [8, 12, 7, 10, 6, 14, 9, 11, 7, 10, 8]), use_container_width=True, config={'displayModeBar': False})
 
-    # --- KART 3: Türkçe Ortalama Süre ---
+    # --- KART 3: Ortalama Süre ---
     st.markdown(f"""
         <div class="gradient-card-darkpurple">
             <div class="card-flex">
@@ -329,8 +339,8 @@ with tab1:
     """, unsafe_allow_html=True)
     st.plotly_chart(create_sparkline([8, 11, 7, 13, 9, 16, 10, 12, 8, 14, 11], [6, 9, 5, 10, 7, 12, 8, 9, 6, 11, 9]), use_container_width=True, config={'displayModeBar': False})
 
-    # Türkçe Zaman Filtresi Buttons
-    st.markdown("---")
+    # Zaman Filtresi Butonları
+    st.markdown("<br>", unsafe_allow_html=True)
     filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
     filter_col1.button("Gün")
     filter_col2.button("Hafta")
@@ -353,7 +363,7 @@ with tab1:
 
 with tab2:
     st.header("📹 Profesyonel Video Analizi")
-    st.write("Video yükleme ve yerel OpenCV analizi buraya gelecek (Bir sonraki aşamanın konusu).")
+    st.write("Video yükleme ve yerel OpenCV analizi buraya gelecek.")
     uploaded_file = st.file_uploader("Analiz etmek istediğiniz reklam videosunu yükleyin", type=["mp4", "mov"])
 
 with tab3:
