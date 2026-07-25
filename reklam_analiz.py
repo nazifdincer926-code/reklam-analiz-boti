@@ -6,107 +6,159 @@ import os
 import numpy as np
 from datetime import datetime, timedelta
 import json
+import plotly.graph_objects as go
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Pro Meta Reklam Analizörü v2.0", layout="wide", page_icon="📈")
 
-# --- YENİ MODERN ARAYÜZ STİLİ (Görseldeki Tasarım) ---
+# --- YENİ MODERN ARAYÜZ STİLİ (Fotoğraftaki Tasarım) ---
 st.markdown("""
     <style>
-    /* Ana Arka Plan (Koyu Lacivert) */
+    /* Ana Arka Plan (Görseldeki Koyu Lacivert/Siyah) */
     .stApp {
-        background-color: #0d1117;
+        background-color: #0b101d;
         color: #ffffff;
+    }
+    
+    /* Hide Streamlit Header Elements for Clean Mobile View */
+    header[data-testid="stHeader"] {
+        background-color: transparent;
     }
     
     /* Yan Menü (Sidebar) Koyu Tema */
     section[data-testid="stSidebar"] {
-        background-color: #161b22;
-        border-right: 1px solid #30363d;
+        background-color: #121829;
+        border-right: 1px solid #1e2638;
     }
     
     /* Sekme (Tab) Tasarımları */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 12px;
+        gap: 8px;
+        background-color: transparent;
     }
     .stTabs [data-baseweb="tab"] {
-        background-color: #161b22;
+        background-color: #121829;
         border-radius: 12px;
         color: #8b949e;
-        padding: 10px 20px;
+        padding: 8px 16px;
         font-weight: 600;
-        border: 1px solid #30363d;
+        border: 1px solid #1e2638;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #238636 !important;
+        background-color: #ff416c !important;
         color: #ffffff !important;
         border: none !important;
     }
 
+    /* Görseldeki Üst Başlık Stili */
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .dashboard-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #ffffff;
+    }
+    .dashboard-subtitle {
+        font-size: 0.9rem;
+        color: #8b949e;
+    }
+
     /* Görseldeki Mor/Mavi Gradyan Kart */
     .gradient-card-purple {
-        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-        border-radius: 20px;
-        padding: 22px;
+        background: linear-gradient(135deg, #7f00ff 0%, #e100ff 100%);
+        border-radius: 24px;
+        padding: 20px;
         color: white;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        margin-bottom: 15px;
+        box-shadow: 0 10px 25px rgba(127, 0, 255, 0.3);
+        margin-bottom: 20px;
     }
 
     /* Görseldeki Kırmızı/Turuncu Gradyan Kart */
     .gradient-card-red {
         background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
-        border-radius: 20px;
-        padding: 22px;
+        border-radius: 24px;
+        padding: 20px;
         color: white;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        margin-bottom: 15px;
+        box-shadow: 0 10px 25px rgba(255, 65, 108, 0.3);
+        margin-bottom: 20px;
     }
 
-    /* Görseldeki Açık Koyu Kart */
-    .dark-card {
-        background-color: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 20px;
-        padding: 22px;
+    /* Görseldeki Koyu Mor Gradyan Kart */
+    .gradient-card-darkpurple {
+        background: linear-gradient(135deg, #a80077 0%, #660099 100%);
+        border-radius: 24px;
+        padding: 20px;
         color: white;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        margin-bottom: 15px;
+        box-shadow: 0 10px 25px rgba(168, 0, 119, 0.3);
+        margin-bottom: 20px;
     }
 
-    .card-title {
-        font-size: 0.9rem;
-        opacity: 0.8;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 8px;
+    .card-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
-    .card-value {
-        font-size: 2.2rem;
-        font-weight: 700;
+    .card-title-text {
+        font-size: 0.95rem;
+        opacity: 0.9;
+        font-weight: 500;
+    }
+
+    .card-value-text {
+        font-size: 2rem;
+        font-weight: 800;
     }
 
     /* Buton Tasarımları */
     .stButton>button {
         background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
         color: white;
-        border-radius: 14px;
+        border-radius: 16px;
         font-weight: bold;
         border: none;
         padding: 12px 24px;
         width: 100%;
         box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4);
     }
-    .stButton>button:hover {
-        opacity: 0.9;
-        color: white;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🚀 Pro Meta Reklam & Kreatif Analiz Merkezi")
-st.markdown("*Dijital Reklamcılık Uzmanı Asistanınız (Veri Odaklı Kârlılık Mimarisi)*")
+# --- İNTERAKTİF ÇİZGİ GRAFİĞİ OLUŞTURUCU (Resimdeki Çizgiler) ---
+def create_sparkline(y_values, bar_values=None):
+    fig = go.Figure()
+    
+    # Arka plandaki sütunlar (Varsa)
+    if bar_values is not None:
+        fig.add_trace(go.Bar(
+            y=bar_values,
+            marker_color='rgba(255, 255, 255, 0.2)',
+            showlegend=False
+        ))
+        
+    # Ön plandaki düğümlü çizgi grafik
+    fig.add_trace(go.Scatter(
+        y=y_values,
+        mode='lines+markers',
+        line=dict(color='white', width=3),
+        marker=dict(color='white', size=7, symbol='circle-open-dot'),
+        showlegend=False
+    ))
+    
+    fig.update_layout(
+        margin=dict(l=0, r=0, t=10, b=0),
+        height=70,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        showlegend=False
+    )
+    return fig
 
 # --- Sidebar - API Kurulumları ---
 st.sidebar.header("🔑 Güvenli API Bağlantıları")
@@ -219,76 +271,91 @@ def ask_ai(api_key, system_prompt, user_prompt):
 
 # --- ANA ARAYÜZ ---
 
-tab1, tab2, tab3 = st.tabs(["📊 Performans Paneli (Canlı)", "🎥 Kreatif Stüdyo", "🧠 AI Performans Dedektifi"])
+tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "🎥 Kreatif Stüdyo", "🧠 AI Performans Dedektifi"])
 
 df_reklamlar = None
 
 with tab1:
-    st.header("📋 Gerçek Reklam Verileriniz (Son 30 Gün)")
+    # Üst Başlık (Fotoğraftaki Overview / Dashboard)
+    st.markdown("""
+        <div class="dashboard-header">
+            <div>
+                <div class="dashboard-subtitle">Overview</div>
+                <div class="dashboard-title">Dashboard</div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
     
+    # API'den Veri Çekme Kontrolü
     if meta_token and ad_account_id:
         df_reklamlar = fetch_meta_data(meta_token, ad_account_id)
-        
-        if df_reklamlar is not None and not df_reklamlar.empty:
-            st.success(f"{len(df_reklamlar)} adet aktif reklam verisi çekildi.")
-            
-            # Özet Metrikler - GÖRSELDEKİ ÖZEL KART TASARIMLARI
-            total_spend = df_reklamlar['Harcanan (TL)'].sum()
-            total_purchases = df_reklamlar['Sipariş'].sum()
-            avg_ctr = df_reklamlar['Tıklama Oranı (CTR %)'].mean()
-            avg_cpa = total_spend / total_purchases if total_purchases > 0 else 0
-            
-            st.markdown("### 📈 Dashboard Özeti")
-            m_col1, m_col2 = st.columns(2)
-            
-            with m_col1:
-                st.markdown(f"""
-                    <div class="gradient-card-purple">
-                        <div class="card-title">Toplam Harcama</div>
-                        <div class="card-value">{total_spend:,.2f} TL</div>
-                    </div>
-                """, unsafe_allow_html=True)
-                
-                st.markdown(f"""
-                    <div class="dark-card">
-                        <div class="card-title">Ortalama CTR</div>
-                        <div class="card-value">%{avg_ctr:.2f}</div>
-                    </div>
-                """, unsafe_allow_html=True)
 
-            with m_col2:
-                st.markdown(f"""
-                    <div class="gradient-card-red">
-                        <div class="card-title">Ortalama CPA (Edinme Maliyeti)</div>
-                        <div class="card-value">{avg_cpa:,.2f} TL</div>
-                    </div>
-                """, unsafe_allow_html=True)
-                
-                st.markdown(f"""
-                    <div class="dark-card">
-                        <div class="card-title">Toplam Sipariş</div>
-                        <div class="card-value">{total_purchases} Adet</div>
-                    </div>
-                """, unsafe_allow_html=True)
-
-            # Tablo renklendirme
-            def style_cpa(row):
-                if row['Sipariş'] == 0 and row['Harcanan (TL)'] > 50:
-                    return ['background-color: #4a1525; color: #ff9999'] * len(row)
-                elif row['CPA (E.Maliyet)'] > target_cpa and row['Sipariş'] > 0:
-                    return ['background-color: #4d3319; color: #ffcc80'] * len(row)
-                elif row['CPA (E.Maliyet)'] <= target_cpa and row['Sipariş'] > 0:
-                    return ['background-color: #123825; color: #a3e635'] * len(row)
-                else:
-                    return [''] * len(row)
-
-            st.dataframe(df_reklamlar.style.apply(style_cpa, axis=1), use_container_width=True)
-
-        else:
-            st.info("API'den veri dönmedi veya hesapta aktif reklam yok.")
-            
+    # DÜZENLEME: Veri olsa da olmasa da Görseldeki Kartları Göster
+    if df_reklamlar is not None and not df_reklamlar.empty:
+        total_spend = f"{df_reklamlar['Harcanan (TL)'].sum():,.0f} TL"
+        avg_ctr = f"{df_reklamlar['Tıklama Oranı (CTR %)'].mean():.1f}%"
+        total_purchases = f"{df_reklamlar['Sipariş'].sum()} Sipariş"
     else:
-        st.warning("⚠️ Soldaki sidebar'a **Meta Access Token** ve **Reklam Hesabı ID** girerek canlı verilerinizi görün.")
+        # Fotoğraftaki Birebir Örnek Rakamlar (Veri Girilmediğinde Açılış Ekranı)
+        total_spend = "127,425"
+        avg_ctr = "21.8%"
+        total_purchases = "05:34"
+
+    # --- KART 1: Mor/Mavi Gradyan (Page Views / Harcama) ---
+    st.markdown(f"""
+        <div class="gradient-card-purple">
+            <div class="card-flex">
+                <span class="card-title-text">Page Views</span>
+                <span class="card-value-text">{total_spend}</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+    st.plotly_chart(create_sparkline([10, 8, 12, 7, 14, 6, 18, 12, 10, 15, 13], [5, 7, 6, 8, 10, 7, 12, 9, 8, 11, 9]), use_container_width=True, config={'displayModeBar': False})
+
+    # --- KART 2: Kırmızı/Turuncu Gradyan (Bounce Rate / CTR) ---
+    st.markdown(f"""
+        <div class="gradient-card-red">
+            <div class="card-flex">
+                <span class="card-title-text">Bounce Rate</span>
+                <span class="card-value-text">{avg_ctr}</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+    st.plotly_chart(create_sparkline([12, 16, 10, 14, 8, 18, 11, 15, 9, 13, 10], [8, 12, 7, 10, 6, 14, 9, 11, 7, 10, 8]), use_container_width=True, config={'displayModeBar': False})
+
+    # --- KART 3: Koyu Mor Gradyan (Average Time / Sipariş) ---
+    st.markdown(f"""
+        <div class="gradient-card-darkpurple">
+            <div class="card-flex">
+                <span class="card-title-text">Average Time</span>
+                <span class="card-value-text">{total_purchases}</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+    st.plotly_chart(create_sparkline([8, 11, 7, 13, 9, 16, 10, 12, 8, 14, 11], [6, 9, 5, 10, 7, 12, 8, 9, 6, 11, 9]), use_container_width=True, config={'displayModeBar': False})
+
+    # Fotoğraftaki Alt Zaman Filtresi (Day | Week | Month | Year)
+    st.markdown("---")
+    filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
+    filter_col1.button("Day")
+    filter_col2.button("Week")
+    filter_col3.button("Month")
+    filter_col4.button("Year")
+
+    # Canlı Tablo Verisi Varsa Alt Tarafta Göster
+    if df_reklamlar is not None and not df_reklamlar.empty:
+        st.markdown("### 📋 Canlı Reklam Tablosu")
+        def style_cpa(row):
+            if row['Sipariş'] == 0 and row['Harcanan (TL)'] > 50:
+                return ['background-color: #4a1525; color: #ff9999'] * len(row)
+            elif row['CPA (E.Maliyet)'] > target_cpa and row['Sipariş'] > 0:
+                return ['background-color: #4d3319; color: #ffcc80'] * len(row)
+            elif row['CPA (E.Maliyet)'] <= target_cpa and row['Sipariş'] > 0:
+                return ['background-color: #123825; color: #a3e635'] * len(row)
+            else:
+                return [''] * len(row)
+
+        st.dataframe(df_reklamlar.style.apply(style_cpa, axis=1), use_container_width=True)
 
 with tab2:
     st.header("📹 Profesyonel Video Analizi")
@@ -338,4 +405,4 @@ with tab3:
                 st.markdown(analiz_sonucu)
                 
     else:
-        st.warning("⚠️ Lütfen önce 'Performans Paneli' sekmesinde Meta verilerini başarıyla yükleyin.")
+        st.warning("⚠️ Lütfen önce 'Dashboard' sekmesinde Meta verilerini yükleyin.")
