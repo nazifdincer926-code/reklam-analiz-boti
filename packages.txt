@@ -1,1 +1,16 @@
-libgl1
+@echo off
+title Pro Meta Reklam Analizörü v2.0
+echo ===================================================
+echo             PRO REKLAM ANALIZ SISTEMI
+echo ===================================================
+echo.
+
+echo [1/2] Gerekli kutuphaneler kontrol ediliyor ve kuruluyor...
+echo (Bu islem internet hizina bagli olarak ilk seferde uzun surebilir.)
+python -m pip install -r requirements.txt
+
+echo.
+echo [2/2] Sistem baslatiliyor...
+python -m streamlit run reklam_analiz.py
+
+pause
